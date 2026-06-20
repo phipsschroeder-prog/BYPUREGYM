@@ -10,6 +10,13 @@ const HERO_SEITEN = [0, 1, 2, 3];
 // ── Mobile-Erkennung ─────────────────────────────────────────
 function isMobile() { return window.innerWidth <= 768; }
 
+// FIX: liefert die tatsächliche, aktuelle Viewport-Höhe (wichtig auf Mobile,
+// da sich window.innerHeight ändert, wenn die Adressleiste ein-/ausblendet).
+// So bleiben JS-Berechnungen immer synchron mit dem CSS (100dvh).
+function getViewportHeight() {
+  return document.documentElement.clientHeight || window.innerHeight;
+}
+
 // ── Burger Menü ───────────────────────────────────────────────
 function toggleMenu() {
   const isOpen = menuOverlay.classList.toggle('open');
@@ -93,7 +100,7 @@ function getSeitenIndex() {
     });
     return closest;
   }
-  return Math.round(container.scrollTop / window.innerHeight);
+  return Math.round(container.scrollTop / getViewportHeight());
 }
 
 // ── Logo ein-/ausblenden + tauschen ──────────────────────────
@@ -202,11 +209,17 @@ container.addEventListener('wheel', (e) => {
   const gesamtSeiten = document.querySelectorAll('.section').length;
   const zielIndex    = Math.max(0, Math.min(gesamtSeiten - 1, aktuellerIdx + richtung));
 
-  container.scrollTo({ top: zielIndex * window.innerHeight, behavior: 'smooth' });
+  container.scrollTo({ top: zielIndex * getViewportHeight(), behavior: 'smooth' });
   setTimeout(() => { isScrolling = false; }, 800);
 }, { passive: false });
 
 // ── Mobile: Touch Snap Scroll ─────────────────────────────────
+// FIX: Auf Mobile wird NICHT mehr programmatisch zu index * Höhe gescrollt
+// (das war die Ursache für das "Verrutschen" – sobald sich die Adressleiste
+// ein-/ausblendete, stimmte die berechnete Position nicht mehr mit der
+// tatsächlichen Section-Position überein). Stattdessen wird jetzt direkt zum
+// jeweiligen Section-Element gescrollt – das passt immer, unabhängig von
+// Adressleiste/Tastatur/Viewport-Schwankungen.
 let touchStartY = 0;
 let touchMoved = false;
 let isTouchScrolling = false;
@@ -233,10 +246,10 @@ container.addEventListener('touchend', (e) => {
 
   const richtung     = delta > 0 ? 1 : -1;
   const aktuellerIdx = getSeitenIndex();
-  const gesamtSeiten = document.querySelectorAll('.section').length;
-  const zielIndex    = Math.max(0, Math.min(gesamtSeiten - 1, aktuellerIdx + richtung));
+  const sections     = document.querySelectorAll('.section');
+  const zielIndex     = Math.max(0, Math.min(sections.length - 1, aktuellerIdx + richtung));
 
-  container.scrollTo({ top: zielIndex * window.innerHeight, behavior: 'smooth' });
+  sections[zielIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
   setTimeout(() => { isTouchScrolling = false; }, 800);
 }, { passive: true });
 
@@ -252,6 +265,15 @@ container.addEventListener('scroll', () => {
   scrollEndTimer = setTimeout(() => {
     zeigeToasts();
   }, 250);
+});
+
+// FIX: Bei Größenänderung des Viewports (z.B. Adressleiste blendet sich
+// auf dem Handy ein/aus, oder Tastatur öffnet sich) Dots/Logo/Nav-Farbe
+// neu berechnen, damit nichts "hängen bleibt" oder falsch markiert ist.
+window.addEventListener('resize', () => {
+  aktualisiereDots();
+  aktualisiereNavFarbe();
+  aktualisiereLogo();
 });
 
 // ── Initialisierung ───────────────────────────────────────────
