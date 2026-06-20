@@ -759,14 +759,27 @@ body.nav-dark .nav-toggle svg {
     height: 100vh;
     height: 100dvh; /* FIX: dynamische Viewport-Höhe gegen das "Springen" bei Adressleiste */
     overflow-y: scroll;
-    scroll-snap-type: none;
+    /* FIX: natives Scroll-Snapping statt eigener JS-Berechnung.
+       Der Browser snappt jetzt selbst zuverlässig zur nächsten Section,
+       statt mittendrin "hängen" zu bleiben. */
+    scroll-snap-type: y mandatory;
     overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   .section {
     height: auto;
     min-height: 100vh;
     min-height: 100dvh; /* FIX */
+    scroll-snap-align: start;
+    scroll-snap-stop: always; /* FIX: verhindert, dass bei schnellem Wischen Sections übersprungen werden */
+  }
+
+  /* Produktseite und Footer dürfen intern scrollen (mehr Inhalt als Bildschirm)
+     daher hier kein scroll-snap-stop, sonst blockiert es das interne Scrollen */
+  .section.products,
+  .section.footer {
+    scroll-snap-stop: normal;
   }
 
   /* ── Navigation ──────────────────────────────────────────── */

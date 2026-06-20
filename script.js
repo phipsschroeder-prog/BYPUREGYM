@@ -213,44 +213,15 @@ container.addEventListener('wheel', (e) => {
   setTimeout(() => { isScrolling = false; }, 800);
 }, { passive: false });
 
-// ── Mobile: Touch Snap Scroll ─────────────────────────────────
-// FIX: Auf Mobile wird NICHT mehr programmatisch zu index * Höhe gescrollt
-// (das war die Ursache für das "Verrutschen" – sobald sich die Adressleiste
-// ein-/ausblendete, stimmte die berechnete Position nicht mehr mit der
-// tatsächlichen Section-Position überein). Stattdessen wird jetzt direkt zum
-// jeweiligen Section-Element gescrollt – das passt immer, unabhängig von
-// Adressleiste/Tastatur/Viewport-Schwankungen.
-let touchStartY = 0;
-let touchMoved = false;
-let isTouchScrolling = false;
-
-container.addEventListener('touchstart', (e) => {
+// ── Mobile: natives CSS Scroll-Snapping ───────────────────────
+// FIX: Die eigene Touch-Berechnung (manuelles scrollIntoView) wurde entfernt.
+// Sie hat mit dem nativen Momentum-Scrolling des Handys kollidiert und dazu
+// geführt, dass die Seite mittendrin zwischen zwei Sections hängen blieb.
+// Jetzt übernimmt scroll-snap-type (siehe CSS) das Einschnappen zuverlässig,
+// das Verbergen der Toasts beim Scrollen reicht hier aus.
+container.addEventListener('touchstart', () => {
   if (!isMobile()) return;
-  touchStartY = e.touches[0].clientY;
-  touchMoved = false;
-}, { passive: true });
-
-container.addEventListener('touchmove', (e) => {
-  if (!isMobile()) return;
-  touchMoved = true;
-  e.preventDefault();
-}, { passive: false });
-
-container.addEventListener('touchend', (e) => {
-  if (!isMobile() || isTouchScrolling || !touchMoved) return;
-  const delta = touchStartY - e.changedTouches[0].clientY;
-  if (Math.abs(delta) < 30) return;
-
-  isTouchScrolling = true;
   verbergeToasts();
-
-  const richtung     = delta > 0 ? 1 : -1;
-  const aktuellerIdx = getSeitenIndex();
-  const sections     = document.querySelectorAll('.section');
-  const zielIndex     = Math.max(0, Math.min(sections.length - 1, aktuellerIdx + richtung));
-
-  sections[zielIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
-  setTimeout(() => { isTouchScrolling = false; }, 800);
 }, { passive: true });
 
 // ── Scroll-Events ─────────────────────────────────────────────
